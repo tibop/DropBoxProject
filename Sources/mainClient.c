@@ -16,7 +16,10 @@ int main() {
 		
 	  connexion();
 	 
-
+	
+	  message = Reception();
+	  printf("J'ai recu: %s\n", message);
+					
 	  afficheMenu();
 		if(fgets(choix, 1024, stdin) != NULL) {
 			switch(choix[0]) {

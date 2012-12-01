@@ -284,17 +284,74 @@ void Terminaison() {
 }
 
 
+/*
+ * Fonctions creation des réponse
+ * Type : COMMANDE, 
+ * typeRep : Positive(0) ou négative(1)
+ * Renvoi 0 si OK, 1 sinon
+ */ 
+
+int envoiRep(char* type, char* login, int typeRep, Client cl ){
+  char* reponse = NULL;
+  char* reponse_temp = NULL;
+  char* login_temp = NULL;
+
+  reponse = malloc((size_t)50);
+  reponse_temp = malloc((size_t)50);
+  login_temp = malloc(strlen(login));
+  login_temp = strncpy(login_temp, login, strlen(login));
+
+  if(typeRep == 0){
+    reponse_temp = strncat(type, "_ACK ", strlen("_ACK "));
+  }else{
+    reponse_temp = strncat(type, "_ERR ", strlen("_ERR "));
+  }
+
+    reponse = strncat(reponse_temp, login_temp, strlen(login_temp));
+    reponse = strcat(reponse, "\n");
+  
+    if(Emission(reponse, cl)==0){
+      perror("\n Erreur lors de l'emission de la réponse");
+      /* if (reponse !=NULL){ */
+      /* 	free(reponse); */
+      /* 	reponse = NULL;} */
+      /* if (reponse_temp !=NULL){ */
+      /* 	free(reponse_temp); */
+      /* 	reponse_temp = NULL;} */
+      /* if(login_temp != NULL){ */
+      /* 	free(login_temp); */
+      /* 	login_temp = NULL;} */
+      return 1;
+    }else {
+    /* if (reponse !=NULL){ */
+    /*   free(reponse); */
+    /*   reponse = NULL;} */
+    /* if (reponse_temp !=NULL){ */
+    /*   free(reponse_temp); */
+    /*   reponse_temp = NULL;} */
+    /* if(login_temp != NULL){ */
+    /*   free(login_temp); */
+    /*   login_temp = NULL;} */
+
+    return 0;
+    }
  
+   return 0;
+  
+}
+  
 
 
 /* 
  * Fonction afin de décoder les requêtes et les envoyer vers la fonction correspondante
+ * renvoie 1 si connexion réussi
  */
-int decodeRequete(char* message, char* pathDB){
+int decodeRequete(char* message, char* pathDB, Client cl){
   char* login;
   char* extr;// utiliser pour l'extraction
   char* password;
   char* requete;
+  int resReq = 0;
 
 
   // Utilisé pour extraire une chaine grâce à un délimiteur ici espace
@@ -305,19 +362,25 @@ int decodeRequete(char* message, char* pathDB){
 
 
   if( strcmp(requete, "CON_USER") == 0){
-      
-    printf("\n\n\n %s ", login);
-    printf("\n\n\n %s ", password);
-  
-    verificationLog(login, password, pathDB);
-    return 1;
+    if(verificationLog(login, password, pathDB) == 0){
+      // Authentification réussie
+      envoiRep(requete, login, 0,cl);
+      resReq = 1;
+    }
+    else{
+      // Authentification échouée
+      envoiRep(requete, login, 1, cl);
+      resReq = 10;
+    }
+     
+    return resReq;
   }
 
-  free(password);
-  free(requete);
-  free(login);
+  /* free(password); */
+  /* free(requete); */
+  /* free(login); */
 
-  printf("Après free");
+
 
   // Ici toutes les requêtes, faudrait ce mettre d'accord sur lesquelles on fait
 
@@ -328,7 +391,6 @@ int decodeRequete(char* message, char* pathDB){
 
 
 }
-
 
 
 /*
@@ -346,7 +408,7 @@ int verificationLog(char* login, char* password, char* databasePath){
    char* loginLu; 
    char* mdpLu;
 
-
+  
   // Allocation de la mémoire
   ligneLog = malloc((size_t)150);
  
@@ -367,28 +429,11 @@ int verificationLog(char* login, char* password, char* databasePath){
       // Test du login
       if (strcmp(login, loginLu)==0){
 	mdpLu = strtok(NULL, " "); // On recupere le mdp Lu dans le fichier
+
 	if(strcmp(password, mdpLu)==0){ // On teste, si Oui on retourne 0 => Authentification réussie
 	  printf("\n\t Authentification réussie : %s\n ", login);
 	  fclose(dataLog);
 	  
-
-	  // Desalocation de la mémoire
-	  if(ligneLog != NULL){
-	    free(ligneLog);
-	    ligneLog = NULL;
-	  }
-	  if(loginLu !=NULL){
-	    free(loginLu);
-	    loginLu = NULL;
-	  }
-	  if(mdpLu != NULL){
-	    free(mdpLu);
-	    mdpLu = NULL;
-	  }
-
-
-
-
 	  return 0;
 	}
       }
@@ -399,19 +444,16 @@ int verificationLog(char* login, char* password, char* databasePath){
   }else{
     perror("\nErreur lors de l'ouverture du fichier");
     // Fermeture du fichier et liberation de la mémoire lors d'une erreur d'ouverture
-    /* free(loginLu); */
-   
-
-
   }
-  
-  return 1; // Authentification échouée
+
+    printf("\n\t Echec de l'Authentification \n");  
 
 
   fclose(dataLog);
   free(ligneLog);
   
-
+  
+  return 1; // Authentification échouée
 }
 
 //** Récupérer et modifier les fonctions découperRequêtes et executerRequetes
@@ -420,8 +462,8 @@ void *thread(void *arg) {
 	/* On récupère le paramètre. Ici de type void* */
 	Client cl = arg;
 	char* message = NULL;
-	char* path = "/home/tibo/Cours/ProjetC/ressources/essai.txt";
-
+	char* path = "/home/tibo/DropBoxProject/Sources/log.txt";
+	int resReq = 0;
 
 		do {
 		if(message != NULL) {
@@ -432,9 +474,24 @@ void *thread(void *arg) {
 	       	message = Reception(cl);
 
 		// On décode la requête envoyé par le client
-		decodeRequete(message, path);
-
-
+		
+		switch(decodeRequete(message, path, cl)){
+		case 1 : 
+		  // Ici l'utilisateur est correctement connecté
+		  // Il faudra je pense faire tout le traitement afin de différencier la partie connexion du reste 
+		  // du programme. 
+		  message = Reception(cl);
+		  printf("\n Message reçu : %s ", message);
+		  break;
+		case 10 :
+		  printf("\n\t Nouvelle tentative de connexion");
+		  break;
+		default :  
+		  break;
+		}
+		  
+	 
+		
 		if(message != NULL) {
 		  // printf("J'ai recu: %s\n Je vais émettre maitenant", message);
 		  // Decoupage et execution de la requete */
@@ -447,10 +504,6 @@ void *thread(void *arg) {
 	pthread_exit(NULL);
 }
 
-
-
-
-//Retourne 
 
 
 
