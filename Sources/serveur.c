@@ -344,20 +344,19 @@ int envoiRep(char* type, char* login, int typeRep, Client cl ){
 
 /* 
  * Fonction afin de décoder les requêtes et les envoyer vers la fonction correspondante
- * renvoie 1 si connexion réussi
+ * renvoie 1 si connexion réussie
  */
 int decodeRequete(char* message, char* pathDB, Client cl){
   char* login;
-  char* extr;// utiliser pour l'extraction
   char* password;
   char* requete;
   int resReq = 0;
 
 
   // Utilisé pour extraire une chaine grâce à un délimiteur ici espace
-  // Le premier prend tout ce qui est à droite de " "
+  // Le premier prend tout ce qui est à gauche de " "
   requete = strtok(message," ");  
-  login = strtok(NULL, " "); // Le second tout ce qui est à droite du second delimiteur
+  login = strtok(NULL, " "); // Le second tout ce qui est à gauche du second delimiteur
   password = strtok(NULL, " "); // etc..
 
 
@@ -376,20 +375,24 @@ int decodeRequete(char* message, char* pathDB, Client cl){
     return resReq;
   }
 
-  /* free(password); */
-  /* free(requete); */
-  /* free(login); */
 
+    // Ici toutes les requêtes, faudrait ce mettre d'accord sur lesquelles on fait
 
+  /* if(login != NULL){ */
+  /*   free(login); */
+  /*   login = NULL;} */
 
-  // Ici toutes les requêtes, faudrait ce mettre d'accord sur lesquelles on fait
+  /* if(password != NULL){ */
+  /*   free(password); */
+  /*   password = NULL; */
+  /* } */
 
-  
+  /* if(requete = NULL){ */
+  /*   free(requete); */
+  /*   requete = NULL ; */
+  /* } */
   
   return 0;
-
-
-
 }
 
 

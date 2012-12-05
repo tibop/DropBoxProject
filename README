@@ -2,3 +2,6 @@ DropBoxProject
 
 Polo -> 1ere version (1/12/2012) : L'authentification fonctionne mais pas de md5, je n'ai pas mis d'architecture, 
      	2eme version 		 : Authentification plus réponse, en gros, CON_USER est opérationnel sauf pour le md5.
+	3eme version (5/12/2012) : Authentification obligatoire pour utilisation du menu et autres fonctions => OK
+	     	     		   		    - Encore un petit bug quand connexion d'un client OK puis un autre NOK, impossible pour celui d'après de se connecter.
+						    - On peut ajouter la partie de code de Sat sur l'emission d'un fichier en binaire

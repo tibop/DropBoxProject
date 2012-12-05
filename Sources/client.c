@@ -221,15 +221,40 @@ void gererEmission(char nomFichier[50]) {
 
 /*
  * Renvoi un entier en fonction de la reponse reçue
+ * Renvoi 0 si reponse ACK, 1 sinon
+ * 2 lors de non reconnaissance du type de réponse
  */
-int decodageReq(char* reponse){
-  int resDecodage = 0;
+int decodeRep(char* reponse){
+  char* commande=NULL;
+  char* commande2=NULL;
+  char* typeRep=NULL;
 
   // Décodage de la réponse connexion
+  
+  commande = strtok(reponse,"_"); // Premiere partie de la réponse, COMMANDE
+  commande2 = strtok(NULL,"_"); // Seconde partie, COMMANDE_COMMANDE
+  typeRep = strtok(NULL," "); // Type : ACK ou ERR
+  
+  // Test
+  printf("\nType Réponse : %s\n",typeRep);
+
+  if(strcmp(typeRep, "ACK") == 0){
+    return 0;}
+  if(strcmp(typeRep,"ERR") == 0){
+    return 1;}
 
 
+  if(commande!=NULL){
+    free(commande);
+    commande = NULL;}
+  if(commande2!=NULL){
+    free(commande2);
+    commande2 = NULL;}
+  if(typeRep !=NULL){
+    free(typeRep);
+    typeRep = NULL;}
 
-  return resDecodage ;
+  return 2;
 }
 
 
