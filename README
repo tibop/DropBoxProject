@@ -1,4 +1,7 @@
-DropBoxProject 
+DropBoxProject
+
+Language C based application -> Dropbox Like
+
 
 Polo -> 1ere version (1/12/2012) : L'authentification fonctionne mais pas de md5, je n'ai pas mis d'architecture, 
      	2eme version 		 : Authentification plus réponse, en gros, CON_USER est opérationnel sauf pour le md5.
