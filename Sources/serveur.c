@@ -38,6 +38,13 @@ int socketEcoute;
 /* longueur de l'adresse */
 socklen_t longeurAdr;
 
+/* chemin serveur*/
+
+char* cheminServ = "/home/tibo/DropBoxProject/Sources/";
+char* cheminListeUtils = "/home/tibo/DropBoxProject/Sources/comptes/ListeUtilisateurs.txt";
+char* cheminRegles = "/home/tibo/DropBoxProject/Sources/droits/";
+char* cheminUsers = "/home/tibo/DropBoxProject/Sources/users/";
+
 typedef struct {
 	/* le socket de service */
 	int socketService;
@@ -343,12 +350,12 @@ int envoiRep(char* type, char* login, int typeRep, Client cl ){
 
 
 /* 
- * Fonction afin de décoder les requêtes et les envoyer vers la fonction correspondante
- * renvoie 1 si connexion réussie
+ * Decodage des requetes envoyé d'un client
+ * Renvoi ? je pensais à faire un int différent pour chaque type de message.
  */
 int decodeRequete(char* message, char* pathDB, Client cl){
-  char* login;
-  char* password;
+  char* param1;
+  char* param2;
   char* requete;
   int resReq = 0;
 
@@ -356,28 +363,34 @@ int decodeRequete(char* message, char* pathDB, Client cl){
   // Utilisé pour extraire une chaine grâce à un délimiteur ici espace
   // Le premier prend tout ce qui est à gauche de " "
   requete = strtok(message," ");  
-  login = strtok(NULL, " "); // Le second tout ce qui est à gauche du second delimiteur
-  password = strtok(NULL, " "); // etc..
+  param1 = strtok(NULL, " "); // Le second tout ce qui est à gauche du second delimiteur
+  param2 = strtok(NULL, " "); // etc..
 
 
   if( strcmp(requete, "CON_USER") == 0){
-    if(verificationLog(login, password, pathDB) == 0){
+    if(verificationLog(param1, param2, pathDB) == 0){
       // Authentification réussie
-      envoiRep(requete, login, 0,cl);
+      envoiRep(requete, param1, 0,cl);
       resReq = 1;
     }
     else{
       // Authentification échouée
-      envoiRep(requete, login, 1, cl);
+      envoiRep(requete, param1, 1, cl);
       resReq = 10;
-    }
-     
+    }  
     return resReq;
   }
 
+  if(strcmp(requete, "ADD_USER") == 0){
+    if(addUtilisateur(param1, param2, pathDB) == 0){
+      envoiRep(requete, param1, 0,cl);
+      resReq = 2;
+    }else{
+      envoiRep(requete,param1, 1,cl);
+    }
+  }
 
-    // Ici toutes les requêtes, faudrait ce mettre d'accord sur lesquelles on fait
-
+     
   /* if(login != NULL){ */
   /*   free(login); */
   /*   login = NULL;} */
@@ -397,6 +410,95 @@ int decodeRequete(char* message, char* pathDB, Client cl){
 
 
 /*
+ * Ajout d'un utilisateur. Renvoi 0 si OK, 1 sinon
+ * Statut d'un utilisateur : admin (1) ou normal (2) => Non géré pour l'instant.
+ * Ne créé pas encore le fichier de règle.
+ */
+
+int addUtilisateur(char* login, char* password, char* path){
+  char* chemin=NULL;
+  FILE* listeUtil; 
+  char* ligneLu=NULL;
+  char* loginLu;
+  char* cheminDossier=NULL;
+  char* creationDossier=NULL;
+  char* ligneUtilisateur=NULL;
+ 
+  // Allocation mémoire
+  chemin = malloc((size_t)100);  
+  ligneLu = malloc((size_t)75);
+  cheminDossier = malloc((size_t)100);
+  creationDossier = malloc((size_t)100);
+  ligneUtilisateur = malloc((size_t)100);
+
+  // Verification si utilisateur déjà existant => Problème d'erreur de segmentation
+  listeUtil = fopen(path, "r");
+
+  if(listeUtil != NULL){
+    printf("\nOuverture du fichier pour la vérification de l'utilisateur\n");
+    //Lecture de toute les lignes 
+    do{
+      fgets(ligneLu, 100, listeUtil);
+      loginLu= strtok(ligneLu, " ");
+      
+      if(strcmp(login,loginLu)==0){
+	fclose(listeUtil);
+	return 1;}
+	
+    }while(feof(listeUtil)==0);
+  }else{
+    perror("\nErreur lors de l'ouverture du fichier pour la vérification de l'utilisateur\n");
+  }
+
+  fclose(listeUtil);
+
+     // Ajout de l'utilisateur dans la liste des utilisateur.
+     
+     ligneUtilisateur = strcpy(ligneUtilisateur, login);
+     ligneUtilisateur = strcat(ligneUtilisateur, " ");
+     ligneUtilisateur = strcat(ligneUtilisateur, password);
+     
+     printf("\n ligne utilisateur : %s", ligneUtilisateur);
+
+     listeUtil = fopen(path,"a"); // Ouverture du fichier en positionnant le "stream" à la fin du fichier
+     
+     if(listeUtil != NULL){
+       printf("\n TEST - Ecriture dans le fichier liste utilisateur");
+       //       fwrite(ligneUtilisateur ,strlen ,strlen(ligneUtilisateur),listeUtil);
+       fprintf(listeUtil,"%s",ligneUtilisateur);
+     }
+     
+     fclose(listeUtil);
+    // Création du chemin pour son dossier personnel
+     chemin = strcpy(chemin,cheminUsers);
+     cheminDossier = strcat(chemin ,login);
+    
+    // Test création du chemin
+     printf("\n Chemin du dossier utilisateur %s situé : %s", login, chemin);
+     creationDossier = strcpy(creationDossier,"mkdir ");
+     creationDossier = strcat(creationDossier, cheminDossier);
+     printf("\n Chemin du dossier utilisateur %s situé : %s", login, creationDossier);
+ 
+     // Utilisation de la fonction system pour utiliser des fonctions SHELL
+     system(creationDossier);
+
+
+ 
+      // Liberation de la mémoire
+
+
+
+
+  return 0;
+
+
+}
+
+
+
+
+
+/*
  * Fonction de verification d'information de connexion d'un utilisateur sur un client
  * A intégrer dans une plus grande fonction "decodeReq"
  */
@@ -405,7 +507,7 @@ int decodeRequete(char* message, char* pathDB, Client cl){
  * Authentification réussie , renvoie 0 sinon 1
  */
 int verificationLog(char* login, char* password, char* databasePath){
-   char* ligneLog=NULL; // Lu dans le fichier => Utile pour faire les tests
+   char* ligneLog=NULL; // Lu dans le fichier liste utilisateurs
    char* reponse=NULL;
    FILE* dataLog;
    char* loginLu; 
@@ -415,7 +517,6 @@ int verificationLog(char* login, char* password, char* databasePath){
   // Allocation de la mémoire
   ligneLog = malloc((size_t)150);
  
-
   //Ouverture du fichier "database"
   dataLog = fopen(databasePath,"r");
   
@@ -465,7 +566,7 @@ void *thread(void *arg) {
 	/* On récupère le paramètre. Ici de type void* */
 	Client cl = arg;
 	char* message = NULL;
-	char* path = "/home/tibo/DropBoxProject/Sources/log.txt";
+	char* path = "/home/tibo/DropBoxProject/Sources/comptes/ListeUtilisateurs.txt";
 	int resReq = 0;
 
 		do {
@@ -485,6 +586,7 @@ void *thread(void *arg) {
 		  // du programme. 
 		  message = Reception(cl);
 		  printf("\n Message reçu : %s ", message);
+		  decodeRequete(message, path, cl);
 		  break;
 		case 10 :
 		  printf("\n\t Nouvelle tentative de connexion");

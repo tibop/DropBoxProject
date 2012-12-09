@@ -28,6 +28,7 @@ char tamponClient[LONGUEUR_TAMPON];
 int debutTampon;
 int finTampon;
 
+
 /* Initialisation.
  * Connexion au serveur sur la machine donnee.
  * Utilisez localhost pour un fonctionnement local.
@@ -187,19 +188,20 @@ void Terminaison() {
 	close(socketClient);
 }
 
-
-
 /* ========================================
- * Fonctions affichages
+ * Fonctions traitements
  * ======================================== */
 
 
 /*
  * affiche le menu
+ * Statut utilisateur : Afin de faire la distinction entre un utilisateur normal (0)
+ * et un administrateur. (1)
  */
-void afficheMenu() {
+void afficheMenu(int statutUtil) {
 	printf("Choisissez une action: \n");
 	printf("1 - Emission d'un fichier\n");
+	printf("6 - Ajouter un utilisateur\n");
 	printf("0 - quitter\n");
 }
 
@@ -213,10 +215,6 @@ void gererEmission(char nomFichier[50]) {
 
 
 
-
-/* ========================================
- * Fonctions traitements
- * ======================================== */
 
 
 /*
@@ -244,6 +242,8 @@ int decodeRep(char* reponse){
     return 1;}
 
 
+
+
   if(commande!=NULL){
     free(commande);
     commande = NULL;}
@@ -256,6 +256,71 @@ int decodeRep(char* reponse){
 
   return 2;
 }
+
+
+/*
+ * Création requête 
+ * Renvoi un pointeur sur la requete créé 
+ */
+
+char* creationRequete(char* type, char* param1, char* param2){
+  char* req=NULL;
+  char* requete=NULL;
+  char* requeteTemp=NULL;
+  char* requeteTemp1=NULL;
+  char* requeteTemp2=NULL;
+  char* requeteTemp3=NULL;
+
+
+  requete = malloc((size_t)75);  
+  requeteTemp = malloc((size_t)75);
+  requeteTemp1 = malloc((size_t)75);
+  requeteTemp2 = malloc((size_t)75);
+  requeteTemp3 = malloc((size_t)75);
+  req = malloc((size_t)75);
+
+  requeteTemp = strcpy(requete, type);
+
+  requeteTemp1= strcat(requeteTemp," ");
+  //  printf("\n TEST- Requete avec type : %s", requeteTemp1);
+  
+
+  param1[strlen(param1)-1] = '\0';
+  requeteTemp2 = strcat(requeteTemp1, param1);
+ 
+  requeteTemp3 = strcat(requeteTemp2, " ");
+ 
+  //  printf("\n TEST- Requete avec type + param1 : %s", requeteTemp3);
+
+  req = strcat(requeteTemp3, param2);
+  //  printf("\n TEST- Requete avec type + param1 + param2 : %s \n", req);
+  
+  requete = strcat(req, "\n");
+  
+  /* if(req!=NULL){ */
+  /*   free(req); */
+  /*   req=NULL; */
+  /* } */
+  /* if(requeteTemp!=NULL){ */
+  /*   free(requeteTemp); */
+  /*   requeteTemp = NULL; */
+  /* } */
+  /* if(requeteTemp1 != NULL){ */
+  /*   free(requeteTemp1); */
+  /*   requeteTemp1 = NULL; */
+  /* } */
+  /* if(requeteTemp2 != NULL){ */
+  /*   free(requeteTemp2); */
+  /*   requeteTemp2 = NULL; */
+  /* } */
+  /* if(requeteTemp3 != NULL){ */
+  /*   free(requeteTemp3); */
+  /*   requeteTemp3 = NULL; */
+  /* } */
+
+  return requete;
+}
+
 
 
 
@@ -287,7 +352,7 @@ int connexion(){
   // Préparation de la chaine login
   login[strlen(login)-1] = '\0';
 
-  // Création de la requête à emettre au serveur
+  // Création de la requête à emettre au serveur => A mettre avec la fonction creation requete
   requete = strcat(requete,"CON_USER \0"); 
   requete_temp = strcat (login, " ");
   requete_temp = strcat(requete_temp, password);
@@ -326,4 +391,35 @@ int connexion(){
   return resCo = 0;
 }
 
+
+/*
+ * Création de la requete d'ajout utilisateur
+ * Renvoi 1 si echec, 0 sinon
+ */
+int addUtilisateur(){
+  
+
+  char* login=NULL; // Entrer par l'utilisateur
+  char* password=NULL; // Entrer par l'utilisateur
+  char* requete=NULL;
+
+  // Allocation de la mémoire pour les chaines
+  login = malloc((size_t)50); // (size_t) 50 caractères me parrait suffisant pour un login et mdp
+  password = malloc((size_t)50);
+  requete = malloc((size_t)100);
+
+  // Phase utilisateur
+  printf("Entrer le login du nouvel utilisateur : ");
+  fgets(login, 50,stdin);
+
+  password = getpass("Entrer son mot de passe : "); // Permet de cacher les caractères tapés
+ 
+  requete = creationRequete("ADD_USER", login, password);
+  
+  if(Emission(requete) == 0){
+    printf("TEST - Erreur lors de l'envoi de la requete d'ajout utilisateur");
+    return 1;
+  }
+  return 0;
+}
 
